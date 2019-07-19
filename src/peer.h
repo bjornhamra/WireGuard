@@ -64,6 +64,7 @@ struct wg_peer {
 	u64 internal_id;
 	struct napi_struct napi;
 	bool is_dead;
+	bool carrier_up;
 };
 
 struct wg_peer *wg_peer_create(struct wg_device *wg,
@@ -79,5 +80,7 @@ static inline struct wg_peer *wg_peer_get(struct wg_peer *peer)
 void wg_peer_put(struct wg_peer *peer);
 void wg_peer_remove(struct wg_peer *peer);
 void wg_peer_remove_all(struct wg_device *wg);
+
+void wg_peer_set_carrier(struct wg_peer *peer, bool up);
 
 #endif /* _WG_PEER_H */

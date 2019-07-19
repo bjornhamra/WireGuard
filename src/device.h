@@ -55,11 +55,14 @@ struct wg_device {
 	struct list_head device_list, peer_list;
 	unsigned int num_peers, device_update_gen;
 	u32 fwmark;
+	u32 linktrack;
 	u16 incoming_port;
 	bool have_creating_net_ref;
 };
 
 int wg_device_init(void);
 void wg_device_uninit(void);
+int wg_device_carrier_notify(struct wg_device *wg);
+
 
 #endif /* _WG_DEVICE_H */

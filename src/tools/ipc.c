@@ -224,6 +224,11 @@ static int userspace_set_device(struct wgdevice *dev)
 		fprintf(f, "listen_port=%u\n", dev->listen_port);
 	if (dev->flags & WGDEVICE_HAS_FWMARK)
 		fprintf(f, "fwmark=%u\n", dev->fwmark);
+	if (dev->flags & WGDEVICE_HAS_LINKTRACK)
+		fprintf(f, "linktrack=%s\n",
+			dev->linktrack == WGLINKTRACK_A_ANY ? "any" :
+		        dev->linktrack == WGLINKTRACK_A_ALL ? "all" : "off");
+
 	if (dev->flags & WGDEVICE_REPLACE_PEERS)
 		fprintf(f, "replace_peers=true\n");
 
@@ -581,6 +586,8 @@ again:
 			mnl_attr_put_u16(nlh, WGDEVICE_A_LISTEN_PORT, dev->listen_port);
 		if (dev->flags & WGDEVICE_HAS_FWMARK)
 			mnl_attr_put_u32(nlh, WGDEVICE_A_FWMARK, dev->fwmark);
+		if (dev->flags & WGDEVICE_HAS_LINKTRACK)
+			mnl_attr_put_u32(nlh, WGDEVICE_A_LINKTRACK, dev->linktrack);
 		if (dev->flags & WGDEVICE_REPLACE_PEERS)
 			flags |= WGDEVICE_F_REPLACE_PEERS;
 		if (flags)
@@ -854,6 +861,10 @@ static int parse_device(const struct nlattr *attr, void *data)
 	case WGDEVICE_A_FWMARK:
 		if (!mnl_attr_validate(attr, MNL_TYPE_U32))
 			device->fwmark = mnl_attr_get_u32(attr);
+		break;
+	case WGDEVICE_A_LINKTRACK:
+		if (!mnl_attr_validate(attr, MNL_TYPE_U32))
+			device->linktrack = mnl_attr_get_u32(attr);
 		break;
 	case WGDEVICE_A_PEERS:
 		return mnl_attr_parse_nested(attr, parse_peers, device);

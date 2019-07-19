@@ -305,6 +305,28 @@ err:
 	return false;
 }
 
+static inline bool parse_linktrack(uint16_t *linktrack, uint32_t *flags, const char *value)
+{
+	if (!strcasecmp(value, "off")) {
+		*flags |= WGDEVICE_HAS_LINKTRACK;
+		*linktrack = WGLINKTRACK_A_UNSPEC;
+		return true;
+	}
+	if (!strcasecmp(value, "any")) {
+		*flags |= WGDEVICE_HAS_LINKTRACK;
+		*linktrack = WGLINKTRACK_A_ANY;
+		return true;
+	}
+	if(!strcasecmp(value, "all")) {
+		*flags |= WGDEVICE_HAS_LINKTRACK;
+		*linktrack = WGLINKTRACK_A_ALL;
+		return true;
+	}
+
+	fprintf(stderr, "Link tracking is either any, all or off\n");
+	return false;
+}
+
 static bool validate_netmask(struct wgallowedip *allowedip)
 {
 	uint32_t *ip;
@@ -446,6 +468,8 @@ static bool process_line(struct config_ctx *ctx, const char *line)
 			ret = parse_port(&ctx->device->listen_port, &ctx->device->flags, value);
 		else if (key_match("FwMark"))
 			ret = parse_fwmark(&ctx->device->fwmark, &ctx->device->flags, value);
+		else if (key_match("LinkTrack"))
+			ret = parse_linktrack(&ctx->device->linktrack, &ctx->device->flags, value);
 		else if (key_match("PrivateKey")) {
 			ret = parse_key(ctx->device->private_key, value);
 			if (ret)
@@ -586,6 +610,11 @@ struct wgdevice *config_read_cmd(char *argv[], int argc)
 			if (!parse_keyfile(device->private_key, argv[1]))
 				goto error;
 			device->flags |= WGDEVICE_HAS_PRIVATE_KEY;
+			argv += 2;
+			argc -= 2;
+		} else if (!strcmp(argv[0], "linktrack") && argc >= 2 && !peer) {
+			if (!parse_linktrack(&device->linktrack, &device->flags, argv[1]))
+				goto error;
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "peer") && argc >= 2) {

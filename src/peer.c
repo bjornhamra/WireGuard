@@ -235,3 +235,9 @@ void wg_peer_put(struct wg_peer *peer)
 		return;
 	kref_put(&peer->refcount, kref_release);
 }
+
+void wg_peer_set_carrier(struct wg_peer *peer, bool up)
+{
+	WRITE_ONCE(peer->carrier_up, up);
+	wg_device_carrier_notify(peer->device);
+}

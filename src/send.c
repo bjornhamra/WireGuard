@@ -104,6 +104,8 @@ void wg_packet_send_handshake_response(struct wg_peer *peer)
 			wg_socket_send_buffer_to_peer(peer, &packet,
 						      sizeof(packet),
 						      HANDSHAKE_DSCP);
+
+			wg_peer_set_carrier(peer, true);
 		}
 	}
 }

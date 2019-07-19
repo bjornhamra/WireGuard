@@ -98,6 +98,7 @@ static void wg_expired_new_handshake(struct timer_list *timer)
 	/* We clear the endpoint address src address, in case this is the cause
 	 * of trouble.
 	 */
+
 	wg_socket_clear_peer_endpoint_src(peer);
 	wg_packet_send_queued_handshake_initiation(peer, false);
 }

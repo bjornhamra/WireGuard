@@ -10,6 +10,7 @@
 #include "ratelimiter.h"
 #include "peer.h"
 #include "messages.h"
+#include "uapi/wireguard.h"
 
 #include <linux/module.h>
 #include <linux/rtnetlink.h>
@@ -403,6 +404,54 @@ static struct rtnl_link_ops link_ops __read_mostly = {
 	.setup			= wg_setup,
 	.newlink		= wg_newlink,
 };
+
+
+int wg_device_carrier_notify(struct wg_device *wg)
+{
+	struct wg_peer *peer;
+
+	bool state = false;
+	bool ifstate = netif_carrier_ok(wg->dev);
+
+	int peers_total = 0;
+	int peers_up = 0;
+
+	int cfg = READ_ONCE(wg->linktrack);
+
+	if(cfg == WGLINKTRACK_A_UNSPEC) {
+		netif_carrier_on(wg->dev);
+		return 0;
+	}
+
+	mutex_lock(&wg->device_update_lock);
+	list_for_each_entry(peer, &wg->peer_list, peer_list) {
+		peers_total++;
+		if(READ_ONCE(peer->carrier_up))
+			peers_up++;
+	}
+	mutex_unlock(&wg->device_update_lock);
+
+	if(cfg == WGLINKTRACK_A_ANY)
+		state = (peers_up != 0);
+	else if(cfg == WGLINKTRACK_A_ALL)
+		state = (peers_up == peers_total);
+
+	if(state && !ifstate)
+		netif_carrier_on(wg->dev);
+	else if(!state && ifstate)
+		netif_carrier_off(wg->dev);
+
+	if(state != ifstate)
+		pr_debug("%s: Carrier state %s (linktrack %s, %d/%d peers up)\n",
+			 wg->dev->name, state ? "UP" : "DOWN",
+			 cfg == WGLINKTRACK_A_ANY ? "ANY" : "ALL",
+			 peers_up, peers_total
+		);
+
+
+
+	return 0;
+}
 
 static int wg_netdevice_notification(struct notifier_block *nb,
 				     unsigned long action, void *data)
